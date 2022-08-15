@@ -1,2 +1,5 @@
-credential*
+<<<<<<< HEAD
+=======
 .idea
+auth.yml
+>>>>>>> 8ee955e (feat: refactor and done)

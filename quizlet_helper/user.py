@@ -2,7 +2,7 @@ from pathlib import Path
 
 from playwright.sync_api import Browser
 
-from quizlet_helper.common import cached_property
+from quizlet_helper._common import cached_property
 
 
 class User:

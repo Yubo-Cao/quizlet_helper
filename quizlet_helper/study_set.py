@@ -4,7 +4,7 @@ from typing import NamedTuple, List, Set
 
 from playwright.sync_api import Page
 
-from quizlet_helper.common import clean, cached_property, scroll, headers
+from quizlet_helper._common import clean, cached_property, scroll, headers
 from quizlet_helper.error import SpiderError, log
 from quizlet_helper.folder import Folder, IDFolder, RootFolder
 from quizlet_helper.lang import LANG_CODE_TO_NAME, Lang, POSSIBLE_LANG

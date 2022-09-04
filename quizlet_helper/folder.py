@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 
 from playwright.sync_api import Locator
 
-from quizlet_helper.common import cached_property, scroll, headers
+from quizlet_helper._common import cached_property, scroll, headers
 from quizlet_helper.error import SpiderError, log
 from quizlet_helper.user import User
 

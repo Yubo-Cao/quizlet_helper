@@ -20,7 +20,7 @@ class Folder:
         elif "name" in kwargs:
             return super().__new__(NamedFolder)
         else:
-            raise ValueError("Invalid arguments.")
+            raise ValueError("You must specify either id or name")
 
     def __init__(self, user: User, **kwargs):
         self.user = user

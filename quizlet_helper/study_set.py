@@ -123,7 +123,6 @@ class StudySet:
             if not isinstance(next(iter(self.folders)), RootFolder)
             else ""
         )
-        p.wait_for_load_state("domcontentloaded")
         clean(p)
         p.locator('[aria-label="标题"]').fill(self.name)
         clean(p)

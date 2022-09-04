@@ -1,5 +1,7 @@
 from playwright.sync_api import Page
 
+from quizlet_helper.error import log
+
 
 def cached_property(fn):
     def getter(self):
@@ -42,12 +44,15 @@ def scroll(page):
 
 
 def clean(page: Page):
-    close = page.locator('[aria-label="关闭窗口"] [aria-label="x"]')
-    if page.locator('[role="dialog"]').is_visible() and close.is_visible():
-        close.click()
-    close = page.locator("text=知道了")
-    if close.is_visible():
-        close.click()
+    try:
+        close = page.locator('[aria-label="关闭窗口"] [aria-label="x"]')
+        if page.locator('[role="dialog"]').is_visible() and close.is_visible():
+            close.click(timeout=1000)
+        close = page.locator("text=知道了")
+        if close.is_visible():
+            close.click(timeout=1000)
+    except TimeoutError:
+        log.warning("Failed to close dialog")
 
 
 headers = {

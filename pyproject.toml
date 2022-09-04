@@ -10,4 +10,4 @@ keywords = ["quizlet", "scraping", "helper"]
 [tool.poetry.dependencies]
 python = "^3.10"
 playwright = "^1.25.2"
-PyYAML = "^5.4.1"
+PyYAML = "^6.0"

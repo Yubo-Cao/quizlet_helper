@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 .idea
-auth.yml
->>>>>>> 8ee955e (feat: refactor and done)
+auth.*
+__pycache__

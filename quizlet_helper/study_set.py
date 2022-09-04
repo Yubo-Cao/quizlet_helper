@@ -119,8 +119,8 @@ class StudySet:
         """
         p = self.page
         p.goto(
-            f"https://quizlet.com/create-set" + f"?inFolder={self.user.id}"
-            if not isinstance(next(iter(self.folders)), RootFolder)
+            f"https://quizlet.com/create-set" + f"?inFolder={folder.id}"
+            if not isinstance(folder :=  next(iter(self.folders)), RootFolder)
             else ""
         )
         clean(p)

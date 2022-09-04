@@ -6,7 +6,6 @@ authors = ["Yubo"]
 homepage = "https://github.com/Yubo-Cao/quizlet_helper"
 repository = "https://github.com/Yubo-Cao/quizlet_helper"
 keywords = ["quizlet", "scraping", "helper"]
-categories = ["scraping", "helper"]
 
 [tool.poetry.dependencies]
 python = "^3.10"

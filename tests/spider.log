@@ -336,3 +336,11 @@ Querying folders using GET
 Querying https://quizlet.com/webapi/3.2/folders?filters%5BisDeleted%5D=false&filters%5BisHidden%5D=false&filters%5BpersonId%5D=274920251&include%5Bfolder%5D%5B%5D=user&page=1
 Querying folders using GET
 Querying https://quizlet.com/webapi/3.2/folders?filters%5BisDeleted%5D=false&filters%5BisHidden%5D=false&filters%5BpersonId%5D=274920251&include%5Bfolder%5D%5B%5D=user&page=1
+Querying folders using GET
+Querying https://quizlet.com/webapi/3.2/folders?filters%5BisDeleted%5D=false&filters%5BisHidden%5D=false&filters%5BpersonId%5D=274920251&include%5Bfolder%5D%5B%5D=user&page=1
+Creating folder Barron
+Querying folders using GET
+Querying https://quizlet.com/webapi/3.2/folders?filters%5BisDeleted%5D=false&filters%5BisHidden%5D=false&filters%5BpersonId%5D=274920251&include%5Bfolder%5D%5B%5D=user&page=1
+Failed to close dialog
+Setting 0 language to 英语
+Setting 1 language to 中文（简体）

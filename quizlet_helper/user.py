@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 from playwright.sync_api import Browser
@@ -25,7 +26,7 @@ class User:
     def _ensure(self):
         if not self.page.url == "https://quizlet.com/latest":
             self.page.goto("https://quizlet.com/latest")
-            self.page.wait_for_load_state("domcontentloaded")
+            time.sleep(0.2)
 
     @cached_property
     def id(self) -> str:

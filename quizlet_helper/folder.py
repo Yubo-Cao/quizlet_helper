@@ -1,10 +1,11 @@
+import time
 from abc import abstractmethod
 from typing import List
 from urllib.parse import urlencode
 
 from playwright.sync_api import Locator
 
-from quizlet_helper._common import cached_property, scroll, headers
+from quizlet_helper._common import cached_property, scroll
 from quizlet_helper.error import SpiderError, log
 from quizlet_helper.user import User
 
@@ -29,7 +30,7 @@ class Folder:
         ), "Invalid keyword arguments"
         self.__dict__.update(kwargs)
 
-    @property
+    @cached_property
     def page(self):
         """
         The page where all folder related actions are performed.
@@ -40,6 +41,7 @@ class Folder:
         """
         Create the folder. Idempotent is not guaranteed.
         """
+        log.debug(f"Creating folder {self.name}")
         p = self.page
         p.goto(f"https://quizlet.com/{self.user.name}/folders")
         p.locator('[aria-label="创建"]').click()
@@ -51,6 +53,7 @@ class Folder:
         """
         Delete the folder. Idempotent is not guaranteed.
         """
+        log.debug(f"Deleting folder {self.name}")
         p = self.page
         p.goto(self.url)
         p.locator(
@@ -71,8 +74,10 @@ class Folder:
         c = self.created
         if value and not c:
             self.create()
+            time.sleep(0.2)
         elif not value and c:
             self.delete()
+            time.sleep(0.2)
 
     @property
     @abstractmethod
@@ -101,25 +106,29 @@ class Folder:
         TODO: Cache the result.
         """
         try:
+            log.debug("Querying folders using GET")
             return self._query_get(name)
         except Exception:
-            log.warning("Querying folders using GET failed. Falling back to JS.")
+            log.debug("Querying folders using GET failed. Falling back to JS.")
             return self._query_js(name)
 
-    def _query_js(self, name) -> List["Folder"]:
+    def _query_js(self, query_str) -> List["Folder"]:
         p = self.page
         p.goto(f"https://quizlet.com/{self.user.name}/folders")
         search: Locator = p.locator('[placeholder="搜索你的文件夹"]')
         if search.is_visible():
-            search.fill(name)
-            p.wait_for_load_state("networkidle")
+            search.fill(query_str)
         scroll(p)
-        return [
-            NamedFolder(self.user, name=name)
-            for name in p.locator(".DashboardListItem header").all_text_contents()
-        ]
+        time.sleep(0.5)
+        loc = p.locator(".DashboardListItem header")
+        log.debug(f"Found {loc.count()} folders")
+        return [IDFolder(self.user, url=url)
+                for url in p.evaluate(
+                f"""Array.from(document.querySelectorAll(".DashboardListItem"))
+    .filter((e) =>e.querySelector(`[class*='Title']`).textContent.includes(`{query_str}`))
+    .map((e) => "https://quizlet.com" + e.querySelector("a").getAttribute("href"));""")]
 
-    def _query_get(self, name):
+    def _query_get(self, query_str):
         p = self.page
         params = {
             "filters[isDeleted]": False,
@@ -132,17 +141,17 @@ class Folder:
         seen_folders = []
         total = 0
         while True:
-            r = p.request
             url = "https://quizlet.com/webapi/3.2/folders" + "?" + urlencode(
                 [(k, str(v).lower() if isinstance(v, bool) else v) for k, v in params.items()])
-            rs = r.get(url, headers=headers)
-            assert rs.ok, f"Failed to query folders: {rs!r}"
+            log.debug(f"Querying {url}")
+            rs = p.goto(url)
+            assert rs.ok, f"Failed to query folders: {rs.status} {rs.status_text}"
             rs = rs.json()["responses"]
             assert len(rs) == 1, f"Unexpected response: {rs!r}"
             rs = rs[0]
             models, paging = rs.values()
             results += [
-                IDFolder(self.user, id=folder["id"], url=folder["_webUrl"])
+                IDFolder(self.user, id=folder["id"], url=folder["_webUrl"], name=folder["name"])
                 for folder in models["folder"]
             ]
             seen_folders += [folder["id"] for folder in models["folder"]]
@@ -152,7 +161,7 @@ class Folder:
             params[
                 "page"
             ] += 1  # TODO: Not tested. I don't have an account that have 200+ folders.
-        return [f for f in results if name in f.name]
+        return [f for f in results if query_str in f.name]
 
     def __repr__(self):
         return f"<Folder {self.name}>"
@@ -162,6 +171,7 @@ class Folder:
 
 
 class NamedFolder(Folder):
+
     @property
     def name(self) -> str:
         return self.__dict__["name"]
@@ -192,15 +202,14 @@ class NamedFolder(Folder):
     def url(self):
         p = self.page
         if self.created:
-            p.goto(f"https://quizlet.com/{self.user.name}/folders")
-            p.locator('[placeholder="搜索你的文件夹"]').fill(self.name)
-            folder = p.locator(f"text={self.name}")
-            if folder.count() >= 1:
-                log.warning(f"Duplicate folder name: {self.name}")
-            folder.first.click()
+            results = self.query(self.name)
+            if len(results) > 1:
+                log.warning(f"More than one folder with name '{self.name}' found. Using the first one.")
+            elif len(results) == 0:
+                raise SpiderError(f"No folder with name '{self.name}' found.")
+            return results[0].url
         else:
             raise SpiderError(f"Folder {self.name} does not exist.")
-        p.wait_for_load_state("networkidle")
         return p.url
 
     def __eq__(self, other):
@@ -217,11 +226,21 @@ class IDFolder(Folder):
 
     def __init__(self, user: User, **kwargs):
         super().__init__(user, **kwargs)
-        assert self.id or self.url, "Either id or url must be provided"
+        assert self.__dict__.get("id") or self.__dict__.get("url"), "Either id or url must be provided."
+        if self.__dict__.get("id"):
+            self.id = self.__dict__["id"]
+        if self.__dict__.get("url"):
+            self.url = self.__dict__["url"]
+        if self.__dict__.get("name"):
+            self.name = self.__dict__["name"]
 
     @cached_property
     def url(self):
         return f"https://quizlet.com/{self.user.name}/folders/{self.id}/sets"
+
+    @cached_property
+    def page(self):
+        return self.user.ctx.new_page()
 
     def _ensure_url(self):
         if self.page.url != self.url:

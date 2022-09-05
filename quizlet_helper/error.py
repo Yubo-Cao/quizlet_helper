@@ -3,7 +3,7 @@ from logging import (
     Logger,
     StreamHandler,
     FileHandler,
-    WARNING,
+    WARNING, DEBUG,
 )
 
 
@@ -13,6 +13,6 @@ class SpiderError(Exception):
     """
 
 
-log = Logger("spider", level=WARNING)
+log = Logger("spider", level=DEBUG)
 log.addHandler(StreamHandler(sys.stdout))
 log.addHandler(FileHandler("spider.log"))

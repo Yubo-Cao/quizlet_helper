@@ -3,7 +3,8 @@ from logging import (
     Logger,
     StreamHandler,
     FileHandler,
-    WARNING, DEBUG,
+    WARNING,
+    DEBUG,
 )
 
 

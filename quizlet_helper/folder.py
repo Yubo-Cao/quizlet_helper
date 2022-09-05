@@ -122,11 +122,14 @@ class Folder:
         time.sleep(0.5)
         loc = p.locator(".DashboardListItem header")
         log.debug(f"Found {loc.count()} folders")
-        return [IDFolder(self.user, url=url)
-                for url in p.evaluate(
+        return [
+            IDFolder(self.user, url=url)
+            for url in p.evaluate(
                 f"""Array.from(document.querySelectorAll(".DashboardListItem"))
     .filter((e) =>e.querySelector(`[class*='Title']`).textContent.includes(`{query_str}`))
-    .map((e) => "https://quizlet.com" + e.querySelector("a").getAttribute("href"));""")]
+    .map((e) => "https://quizlet.com" + e.querySelector("a").getAttribute("href"));"""
+            )
+        ]
 
     def _query_get(self, query_str):
         p = self.page
@@ -141,8 +144,16 @@ class Folder:
         seen_folders = []
         total = 0
         while True:
-            url = "https://quizlet.com/webapi/3.2/folders" + "?" + urlencode(
-                [(k, str(v).lower() if isinstance(v, bool) else v) for k, v in params.items()])
+            url = (
+                "https://quizlet.com/webapi/3.2/folders"
+                + "?"
+                + urlencode(
+                    [
+                        (k, str(v).lower() if isinstance(v, bool) else v)
+                        for k, v in params.items()
+                    ]
+                )
+            )
             log.debug(f"Querying {url}")
             rs = p.goto(url)
             assert rs.ok, f"Failed to query folders: {rs.status} {rs.status_text}"
@@ -151,7 +162,12 @@ class Folder:
             rs = rs[0]
             models, paging = rs.values()
             results += [
-                IDFolder(self.user, id=folder["id"], url=folder["_webUrl"], name=folder["name"])
+                IDFolder(
+                    self.user,
+                    id=folder["id"],
+                    url=folder["_webUrl"],
+                    name=folder["name"],
+                )
                 for folder in models["folder"]
             ]
             seen_folders += [folder["id"] for folder in models["folder"]]
@@ -171,7 +187,6 @@ class Folder:
 
 
 class NamedFolder(Folder):
-
     @property
     def name(self) -> str:
         return self.__dict__["name"]
@@ -204,7 +219,9 @@ class NamedFolder(Folder):
         if self.created:
             results = self.query(self.name)
             if len(results) > 1:
-                log.warning(f"More than one folder with name '{self.name}' found. Using the first one.")
+                log.warning(
+                    f"More than one folder with name '{self.name}' found. Using the first one."
+                )
             elif len(results) == 0:
                 raise SpiderError(f"No folder with name '{self.name}' found.")
             return results[0].url
@@ -226,7 +243,9 @@ class IDFolder(Folder):
 
     def __init__(self, user: User, **kwargs):
         super().__init__(user, **kwargs)
-        assert self.__dict__.get("id") or self.__dict__.get("url"), "Either id or url must be provided."
+        assert self.__dict__.get("id") or self.__dict__.get(
+            "url"
+        ), "Either id or url must be provided."
         if self.__dict__.get("id"):
             self.id = self.__dict__["id"]
         if self.__dict__.get("url"):

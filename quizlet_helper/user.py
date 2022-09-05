@@ -8,11 +8,11 @@ from quizlet_helper._common import cached_property
 
 class User:
     def __init__(
-            self,
-            username: str,
-            password: str,
-            browser: Browser,
-            auth_filename: str | Path = Path("auth.json"),
+        self,
+        username: str,
+        password: str,
+        browser: Browser,
+        auth_filename: str | Path = Path("auth.json"),
     ):
         self.name = username
         self.passwd = password

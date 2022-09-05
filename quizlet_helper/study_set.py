@@ -1,10 +1,11 @@
 import time
 from abc import abstractmethod
 from typing import NamedTuple, List, Set
+from urllib.parse import urlencode
 
 from playwright.sync_api import Page
 
-from quizlet_helper._common import clean, cached_property, scroll, headers
+from quizlet_helper._common import clean, cached_property, scroll
 from quizlet_helper.error import SpiderError, log
 from quizlet_helper.folder import Folder, IDFolder, RootFolder
 from quizlet_helper.lang import LANG_CODE_TO_NAME, Lang, POSSIBLE_LANG
@@ -37,20 +38,20 @@ class StudySet:
         if not folders:
             folders = [RootFolder]
         assert len(set(f.user for f in folders)) == 1, "Folders must be from same user"
-        kwargs['folders'] = set(folders)
+        kwargs["folders"] = set(folders)
 
-        if not isinstance(kwargs.get('cards', []), List):
+        if not isinstance(kwargs.get("cards", []), List):
             try:
-                kwargs['cards'] = [
+                kwargs["cards"] = [
                     Card(*card.split(StudySet.WORD_DEF_SEP))
-                    for card in kwargs['cards'].split(StudySet.CARD_SEP)
+                    for card in kwargs["cards"].split(StudySet.CARD_SEP)
                 ]
             except ValueError:
                 raise ValueError(f"Illegal argument: '{self.cards}' for content.")
 
-        if (wl := kwargs['word_lang']) not in POSSIBLE_LANG:
+        if (wl := kwargs["word_lang"]) not in POSSIBLE_LANG:
             raise ValueError(f"Illegal argument: '{wl}' for key_lang.")
-        if (dl := kwargs['definition_lang']) not in POSSIBLE_LANG:
+        if (dl := kwargs["definition_lang"]) not in POSSIBLE_LANG:
             raise ValueError(f"Illegal argument: '{dl}' for val_lang.")
         self.__dict__.update(kwargs)
 
@@ -102,7 +103,7 @@ class StudySet:
         """
         The id of the study set.
         """
-        return self.page.evaluate('dataLayer[0].studyableId')
+        return self.page.evaluate("dataLayer[0].studyableId")
 
     @cached_property
     def url(self) -> str:
@@ -120,7 +121,7 @@ class StudySet:
         p = self.page
         p.goto(
             f"https://quizlet.com/create-set" + f"?inFolder={folder.id}"
-            if not isinstance(folder :=  next(iter(self.folders)), RootFolder)
+            if not isinstance(folder := next(iter(self.folders)), RootFolder)
             else ""
         )
         clean(p)
@@ -133,10 +134,10 @@ class StudySet:
                 for card in self.cards
             )
         )
-        loc = p.locator("[placeholder=\"\\-\"]")
+        loc = p.locator('[placeholder="\\-"]')
         loc.click()
         loc.fill(StudySet.WORD_DEF_SEP)
-        loc = p.locator("[placeholder=\"\\\\n\\\\n\"]")
+        loc = p.locator('[placeholder="\\\\n\\\\n"]')
         loc.click()
         loc.fill(StudySet.CARD_SEP)
         time.sleep(0.2)
@@ -146,7 +147,7 @@ class StudySet:
 
         def lang(n, content):
             log.debug(f"Setting {n} language to {content}")
-            p.locator('button.UILink').nth(n).click()
+            p.locator("button.UILink").nth(n).click()
             p.locator('[placeholder="搜索语言"]:visible').fill(content)
             p.locator('[role="option"]:visible').first.click()
             time.sleep(0.2)
@@ -199,9 +200,10 @@ class StudySet:
         p.goto(f"https://quizlet.com/{self.user.name}/sets")
         p.locator('[placeholder="搜索你的学习集"]').fill(query_str)
         scroll(p)
-        loc = p.locator('.DashboardListItem a:has([class*=Title])')
+        loc = p.locator(".DashboardListItem a:has([class*=Title])")
         return [
-            IDStudySet(self.user, url=loc.nth(i).get_attribute("href")) for i in range(loc.count())
+            IDStudySet(self.user, url=loc.nth(i).get_attribute("href"))
+            for i in range(loc.count())
         ]
 
     def _query_get(self, query_str) -> List["StudySet"]:
@@ -235,14 +237,18 @@ class StudySet:
         }
 
         p: Page = self.page
-        r = p.request
 
         while True:
             try:
-                rp = r.get(
-                    f"https://quizlet.com/webapi/3.2/feed/{self.user.id}",
-                    params=params,
-                    headers=headers
+                rp = p.goto(
+                    f"https://quizlet.com/webapi/3.2/feed/{self.user.id}"
+                    + "?"
+                    + urlencode(
+                        [
+                            (k, str(v).lower() if isinstance(v, bool) else v)
+                            for k, v in params.items()
+                        ]
+                    )
                 )
                 assert rp.ok
                 rs = rp.json()["responses"]
@@ -257,7 +263,9 @@ class StudySet:
                 params["seenCreatedSetIds"] = ",".join(seen_created_set_ids)
                 sets.extend(
                     [
-                        StudySet(self.user, id=study_set["id"], title=study_set["title"])
+                        StudySet(
+                            self.user, id=study_set["id"], title=study_set["title"]
+                        )
                         for study_set in models["set"]
                     ]
                 )
@@ -299,7 +307,9 @@ class NamedStudySet(StudySet):
 
     def __init__(self, user, **kwargs):
         super().__init__(user, **kwargs)
-        if not all(attr in kwargs for attr in ("name", "word_lang", "definition_lang", "cards")):
+        if not all(
+            attr in kwargs for attr in ("name", "word_lang", "definition_lang", "cards")
+        ):
             raise ValueError("name, word_lang, definition_lang, cards are required.")
 
 
@@ -335,13 +345,15 @@ class IDStudySet(StudySet):
     def folders(self):
         p = self._ensure()
         folders = p.locator("text=添加至 >> css=a")
-        return set([
-            IDFolder(
-                self.user,
-                url="https://quizlet.com" + folders.nth(i).get_attribute("href"),
-            )
-            for i in range(folders.count())
-        ])
+        return set(
+            [
+                IDFolder(
+                    self.user,
+                    url="https://quizlet.com" + folders.nth(i).get_attribute("href"),
+                )
+                for i in range(folders.count())
+            ]
+        )
 
     @cached_property
     def name(self):

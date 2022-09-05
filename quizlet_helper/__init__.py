@@ -5,10 +5,10 @@ from quizlet_helper.error import log
 from playwright.sync_api import sync_playwright
 
 __all__ = [
-    'StudySet',
-    'Card',
-    'Folder',
-    'User',
-    'sync_playwright',
-    'log',
+    "StudySet",
+    "Card",
+    "Folder",
+    "User",
+    "sync_playwright",
+    "log",
 ]

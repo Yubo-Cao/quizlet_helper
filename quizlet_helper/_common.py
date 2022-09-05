@@ -1,3 +1,5 @@
+import time
+
 from playwright.sync_api import Page, TimeoutError
 
 from quizlet_helper.error import log
@@ -47,10 +49,11 @@ def clean(page: Page):
     try:
         close = page.locator('[aria-label="关闭窗口"] [aria-label="x"]')
         if page.locator('[role="dialog"]').is_visible() and close.is_visible():
-            close.click(timeout=5000)
+            close.click(timeout=500)
+            time.sleep(0.2)
         close = page.locator("text=知道了")
         if close.is_visible():
-            close.click(timeout=5000)
+            close.click(timeout=500)
     except TimeoutError:
         log.warning("Failed to close dialog")
 

@@ -145,14 +145,14 @@ class Folder:
         total = 0
         while True:
             url = (
-                "https://quizlet.com/webapi/3.2/folders"
-                + "?"
-                + urlencode(
-                    [
-                        (k, str(v).lower() if isinstance(v, bool) else v)
-                        for k, v in params.items()
-                    ]
-                )
+                    "https://quizlet.com/webapi/3.2/folders"
+                    + "?"
+                    + urlencode(
+                [
+                    (k, str(v).lower() if isinstance(v, bool) else v)
+                    for k, v in params.items()
+                ]
+            )
             )
             log.debug(f"Querying {url}")
             rs = p.goto(url)
@@ -207,27 +207,26 @@ class NamedFolder(Folder):
         elif not value and c:
             self.delete()
 
+    def _ensure_url(self):
+        if self.page.url != self.url:
+            self.page.goto(self.url)
+        return self.page
+
     @cached_property
     def id(self):
-        p = self.page
-        p.goto(self.url)
+        p = self._ensure_url()
         return p.evaluate("dataLayer[0].studyableId")
 
     @cached_property
     def url(self):
-        p = self.page
-        if self.created:
-            results = self.query(self.name)
-            if len(results) > 1:
-                log.warning(
-                    f"More than one folder with name '{self.name}' found. Using the first one."
-                )
-            elif len(results) == 0:
-                raise SpiderError(f"No folder with name '{self.name}' found.")
-            return results[0].url
-        else:
-            raise SpiderError(f"Folder {self.name} does not exist.")
-        return p.url
+        results = self.query(self.name)
+        if len(results) > 1:
+            log.warning(
+                f"More than one folder with name '{self.name}' found. Using the first one."
+            )
+        elif len(results) == 0:
+            raise SpiderError(f"No folder with name '{self.name}' found.")
+        return results[0].url
 
     def __eq__(self, other):
         return self.name == other.name

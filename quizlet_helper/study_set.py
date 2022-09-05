@@ -32,6 +32,8 @@ class StudySet:
 
     def __init__(self, user: User, **kwargs):
         self.user = user
+        if not all(k in {"name", "folders", "cards", "word_lang", "definition_lang", "url", "id"} for k in kwargs):
+            raise ValueError("Invalid keyword arguments")
         folders = kwargs.get("folders", [RootFolder])
         if not isinstance(folders, list):
             folders = [folders]
@@ -118,11 +120,12 @@ class StudySet:
         """
         Create the study set. Idempotent is not guaranteed.
         """
+        log.debug(f"Creating {self}")
         p = self.page
         p.goto(
-            f"https://quizlet.com/create-set" + f"?inFolder={folder.id}"
-            if not isinstance(folder := next(iter(self.folders)), RootFolder)
-            else ""
+            f"https://quizlet.com/create-set" + ("" if
+                                                 isinstance(folder := next(iter(self.folders)), RootFolder)
+                                                 else f"?inFolder={folder.id}")
         )
         clean(p)
         p.locator('[aria-label="标题"]').fill(self.name)
@@ -308,7 +311,7 @@ class NamedStudySet(StudySet):
     def __init__(self, user, **kwargs):
         super().__init__(user, **kwargs)
         if not all(
-            attr in kwargs for attr in ("name", "word_lang", "definition_lang", "cards")
+                attr in kwargs for attr in ("name", "word_lang", "definition_lang", "cards")
         ):
             raise ValueError("name, word_lang, definition_lang, cards are required.")
 

@@ -160,7 +160,7 @@ class StudySet:
 
         p.locator('div[class*="heading"] [aria-label="创建"]').click()
         # jump to the study set page
-        p.wait_for_load_state("domcontentloaded")
+        p.wait_for_load_state("networkidle")
         clean(p)
 
     def delete(self) -> None:
